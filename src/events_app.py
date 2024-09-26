@@ -3,13 +3,15 @@
 from typing import Dict
 # 3rd-party imports
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, join_room, leave_room
+from flask_socketio import SocketIO
 from flask_restful import Api, Resource
 # ogd imports
 from ogd.common.models.Event import Event
 from ogd.common.schemas.games.GameSchema import GameSchema
 from ogd.core.managers.FeatureManager import FeatureManager
 from ogd.core.managers.ExportManager import ExportManager
+# local imports
+from utils.ClientManager import ClientManager
 
 app = Flask(__name__)
 api = Api(app)
@@ -21,7 +23,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 #   'aqualab' : ['clientIDxxxxxinRoomAqualab', 'clientIDyyyyyyinRoomAqualab'],
 #   ...
 # }
-game_rooms = {}
+
+client_manager = ClientManager()
+
 game_schema = GameSchema.FromFile(game_id="AQUALAB")
 loader = ExportManager._loadLoaderClass(game_id="AQUALAB")
 feature_manager = FeatureManager(game_schema=game_schema, LoaderClass=loader, feature_overrides=["ActiveTime"])
@@ -31,48 +35,20 @@ feature_manager = FeatureManager(game_schema=game_schema, LoaderClass=loader, fe
 def index():
     return render_template('index.html')
 
-def remove_client_by_client_id(client_id:str):
-    """Given a client's session ID, remove it from all game rooms.
-
-    :param client_id: The ID of the client to be removed from all game rooms
-    :type client_id: str
-    """
-    for game_name, clients in game_rooms.items():
-        if client_id in clients:
-            clients.remove(client_id)
-            leave_room(game_name, client_id)
-            # print(f'Client ID: {client_id} removed from Room {game_name}')
-
-def add_client_by_client_id(game_name:str, client_id:str):
-    """Given the name of a game room and a client's session id, join client to the corresponding game room
-
-    :param game_name: The name of the game to whose room the client should be added
-    :type game_name: str
-    :param client_id: The ID of the client session to be added into the room
-    :type client_id: str
-    """
-    if game_name not in game_rooms:
-        game_rooms[game_name] = []
-
-    if client_id not in game_rooms[game_name]:
-        game_rooms[game_name].append(client_id)
-        join_room(game_name, client_id)
-        # print(f'Client ID: {client_id} added to Room {game_name}')
-
 @socketio.on('connect')
 def handle_connect():
     """When a new client connects, add its ID to the default game room, "AQUALAB"
     """
     client_id = request.sid
     # print(f'Client connected with ID: {client_id}')
-    add_client_by_client_id("AQUALAB", client_id)
+    client_manager.add_client_by_client_id("AQUALAB", client_id)
 
 @socketio.on('disconnect')
 def handle_disconnect():
     """When current client "disconnects," remove its ID from game rooms
     """
     client_id = request.sid
-    remove_client_by_client_id(client_id)
+    client_manager.remove_client_by_client_id(client_id)
     # print(f'Client disconnected with ID: {client_id}')
 
 @socketio.on('game_selector_changed')
@@ -83,8 +59,8 @@ def handle_game_selector_changed(selectedGame:str):
     :type selectedGame: str
     """
     client_id = request.sid
-    remove_client_by_client_id(client_id)
-    add_client_by_client_id(selectedGame, client_id)
+    client_manager.remove_client_by_client_id(client_id)
+    client_manager.add_client_by_client_id(selectedGame, client_id)
 
 class LoggerReceiver(Resource):
     """flask-restful API receiver.
