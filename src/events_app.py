@@ -1,4 +1,9 @@
 #!/bin/env python
+"""
+The 'Events App' receives events and distributes them via sockets to registered clients.
+This includes other sockets services, such as CI versions and realtime feature generators,
+as well as end-users who open the monitor webpage.
+"""
 # global imports
 from typing import Dict
 # 3rd-party imports
