@@ -12,7 +12,7 @@ on:
 env:
   CI: ""
   LOCAL_DIR:   src
-  DEPLOY_HOST: ${{ vars.OGD_MONITOR_HOST }}
+  DEPLOY_HOST: ${{ vars.OGD_SERVICES_HOST }}
   DEPLOY_DIR:  ${{ vars.WSGI_PATH }}/opengamedata-server/${{ github.ref_name }}/monitor
   DEPLOY_URL:  ${{ vars.OGD_MONITOR_HOST }}
   URL_PATH:    /
