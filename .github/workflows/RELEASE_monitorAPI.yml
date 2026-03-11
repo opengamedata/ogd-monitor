@@ -1,16 +1,17 @@
 # Workflow to build and deploy designer dashboard to server.
-name: OpenGameData Event Monitor API Release
+name: Release Script - Monitor API
+run-name: ${{ format('{0} - {1}', github.workflow, github.event_name == 'release' && github.ref || 'Manual Run') }}
 on:
   workflow_dispatch: # Allow manual trigger of this workflow from the Actions tab
   push: # Trigger automatically when we do a merge to production
     branches: [ production ]
     paths:
     - '.github/workflows/monitorAPI_release.yml'
-    - 'monitor/**'
+    - 'src/**'
 
 env:
   CI: ""
-  LOCAL_DIR:   monitor
+  LOCAL_DIR:   src
   DEPLOY_HOST: ${{ vars.OGD_MONITOR_HOST }}
   DEPLOY_DIR:  ${{ vars.WSGI_PATH }}/opengamedata-server/${{ github.ref_name }}/monitor
   DEPLOY_URL:  ${{ vars.OGD_MONITOR_HOST }}
@@ -27,17 +28,19 @@ jobs:
     steps:
 
   # 1. Local checkout & config
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
 
   # 2. Build 
 
   # 3. Remote config & deploy
-    - name: Get OpenConnect installed
-      run: sudo apt-get -q update && sudo apt-get -q install openconnect
-    - name: Connect VPN
-      run: echo ${{ secrets.VPN_PASS }} | sudo openconnect --protocol=gp -u ${{ secrets.VPN_USER }} --passwd-on-stdin soe.vpn.wisc.edu &
+    - name: Connect to VPN
+      uses: opengamedata/actions-openconnect-vpn@v1.1
+      with:
+        username: ${{ secrets.VPN_USER }}
+        password: ${{ secrets.VPN_PASS }}
+        endpoint: "soe.vpn.wisc.edu"
 
     - name: Setup Access Key
       run: |
@@ -48,7 +51,7 @@ jobs:
       run: ssh -o StrictHostKeyChecking=no -T -i ./key.txt ${{ secrets.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} "mkdir -p ${{ env.DEPLOY_DIR }}"
 
     - name: Upload *App* to web server via rsync
-      uses: burnett01/rsync-deployments@5.2
+      uses: burnett01/rsync-deployments@7.0.1
       with:
         # switches:
         # -v : verbose output
@@ -72,6 +75,6 @@ jobs:
     - name: Announce deploy
       run: echo "Deployed to ${{ env.DEPLOY_URL }}"
     - name: Upload logs as artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         path: ./*.log

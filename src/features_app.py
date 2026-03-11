@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, join_room, leave_room
+from flask_socketio import SocketIO
 from flask_restful import Api, Resource
 
+from ogd.common.schemas.games.GameSchema import GameSchema
+from ogd.common.models.Event import Event
 from ogd.core.managers.FeatureManager import FeatureManager
-from ogd.core.schemas.games.GameSchema import GameSchema
 from ogd.core.games.AQUALAB.AqualabLoader import AqualabLoader
-from ogd.core.schemas.Event import Event
+# local imports
+from utils.ClientManager import ClientManager
 
 app = Flask(__name__)
 api = Api(app)
@@ -17,6 +19,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 #   'aqualab' : ['clientIDxxxxxinRoomAqualab', 'clientIDyyyyyyinRoomAqualab'],
 #   ...
 # }
+client_manager = ClientManager()
+
 game_rooms = {}
 game_managers = {}
 
@@ -25,44 +29,20 @@ game_managers = {}
 def index():
     return render_template('index.html')
 
-# given client session id
-# remove it from game rooms
-def remove_client_by_client_id(client_id):
-    for game_name, clients in game_rooms.items():
-        if client_id in clients:
-            clients.remove(client_id)
-            leave_room(game_name, client_id)
-            # print(f'Client ID: {client_id} removed from Room {game_name}')
-
-# given game room name and client session id
-# join client to the corresponding game room
-def add_client_by_client_id(game_name, client_id):
-    if game_name not in game_rooms:
-        game_rooms[game_name] = []
-    if game_name not in game_managers:
-        _game_schema = GameSchema(game_id=game_name)
-        game_managers[game_name] = FeatureManager(game_schema=_game_schema, LoaderClass=AqualabLoader, feature_overrides=None)
-
-    if client_id not in game_rooms[game_name]:
-        game_rooms[game_name].append(client_id)
-        join_room(game_name, client_id)
-        # print(f'Client ID: {client_id} added to Room {game_name}')
-    
-
 # when new client is "connect"
 # add its id to default game room "aqualab"
 @socketio.on('connect')
 def handle_connect():
     client_id = request.sid
     # print(f'Client connected with ID: {client_id}')
-    add_client_by_client_id("AQUALAB", client_id)
+    client_manager.add_client_by_client_id("AQUALAB", client_id)
 
 # when current client is "disconnect"
 # remove its id from game rooms
 @socketio.on('disconnect')
 def handle_disconnect():
     client_id = request.sid
-    remove_client_by_client_id(client_id)
+    client_manager.remove_client_by_client_id(client_id)
     # print(f'Client disconnected with ID: {client_id}')
 
 # when current client changes game selecor
@@ -70,8 +50,8 @@ def handle_disconnect():
 @socketio.on('game_selector_changed')
 def handle_game_selector_changed(selectedGame):
     client_id = request.sid
-    remove_client_by_client_id(client_id)
-    add_client_by_client_id(selectedGame, client_id)
+    client_manager.remove_client_by_client_id(client_id)
+    client_manager.add_client_by_client_id(selectedGame, client_id)
 
 # flask-restful api receiver
 # allows data coming in through name space 'all-game'
