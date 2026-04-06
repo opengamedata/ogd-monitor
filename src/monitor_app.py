@@ -9,7 +9,7 @@ from ogd.core.models.Event import Event
 # local imports
 from utils.ClientManager import ClientManager
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="events/templates", static_folder="events/static")
 api = Api(app)
 app.config['SECRET_KEY'] = 'secret-key'
 socketio = SocketIO(app, cors_allowed_origins="*")
