@@ -3,7 +3,7 @@ from flask_socketio import SocketIO
 from flask_restful import Api, Resource
 
 # from ogd.common.schemas.games.GameSchema import GameSchema
-from ogd.common.models.Event import Event
+from ogd.core.models.Event import Event
 # from ogd.core.managers.FeatureManager import FeatureManager
 # from ogd.core.games.AQUALAB.AqualabLoader import AqualabLoader
 # local imports
@@ -59,8 +59,7 @@ def handle_game_selector_changed(selectedGame):
 class LoggerReceiver(Resource):
     def post(self):
         json_data = request.get_json() or {}
-        _event = Event(session_id=json_data.get("session_id"),
-                       app_id=json_data.get("app_id", "AQUALAB"))
+        _event = Event.FromJSON(json_data=json_data)
         socketio.emit('logger_data', json_data, to=json_data.get('app_id'))
         return {'message': 'Received logger data successfully'}
 
