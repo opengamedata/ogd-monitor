@@ -65,7 +65,7 @@ class LoggerReceiver(Resource):
         return {'message': 'Received logger data successfully'}
 
 
-api.add_resource(LoggerReceiver, '/all-game')
+api.add_resource(LoggerReceiver, '/log/event')
 
 if __name__ == '__main__':
     socketio.run(app, port=5022, debug=True, use_reloader=True, log_output=True, allow_unsafe_werkzeug=True) # For debugging work
