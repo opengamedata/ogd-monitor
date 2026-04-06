@@ -6,7 +6,7 @@ on:
   push: # Trigger automatically when we do a merge to production
     branches: [ production ]
     paths:
-    - '.github/workflows/monitorAPI_release.yml'
+    - '.github/workflows/RELEASE_monitorAPI.yml'
     - 'src/**'
 
 env:
