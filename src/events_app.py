@@ -2,10 +2,10 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from flask_restful import Api, Resource
 
-from ogd.common.schemas.games.GameSchema import GameSchema
+# from ogd.common.schemas.games.GameSchema import GameSchema
 from ogd.common.models.Event import Event
-from ogd.core.managers.FeatureManager import FeatureManager
-from ogd.core.games.AQUALAB.AqualabLoader import AqualabLoader
+# from ogd.core.managers.FeatureManager import FeatureManager
+# from ogd.core.games.AQUALAB.AqualabLoader import AqualabLoader
 # local imports
 from utils.ClientManager import ClientManager
 
